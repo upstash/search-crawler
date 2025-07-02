@@ -36,7 +36,7 @@ export async function crawlDocumentation(url: string): Promise<CrawledContent[]>
           const sectionPath = headingId ? `${url.replace(new URL(url).origin, '')}#${headingId}` : url.replace(new URL(url).origin, '');
           results.push({
             url: sectionUrl,
-            title: headingText || baseTitle,
+            title: headingText ? `${baseTitle} - ${headingText}`.trim() : baseTitle,
             content: cleanContent,
             path: sectionPath
           });
