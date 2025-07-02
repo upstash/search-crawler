@@ -1,5 +1,5 @@
 {
-  "name": "crawl-and-search",
+  "name": "@upstash/search-crawler",
   "version": "1.0.0",
   "description": "A CLI tool to crawl documentation sites and create a search index for Upstash Search.",
   "repository": {
@@ -14,7 +14,7 @@
     "package.json"
   ],
   "bin": {
-    "crawl-and-search": "./dist/index.js"
+    "@upstash/search-crawler": "./dist/index.js"
   },
   "scripts": {
     "build": "tsup",
@@ -28,8 +28,8 @@
     "upstash",
     "cli"
   ],
-  "author": "alitariksahin",
-  "license": "MIT",
+  "author": "Upstash",
+  "license": "ISC",
   "dependencies": {
     "@clack/prompts": "^0.11.0",
     "@upstash/search": "^0.1.2",

@@ -1,4 +1,4 @@
-# crawl-and-search
+# @upstash/search-crawler
 
 A CLI tool to crawl documentation sites and create a search index for Upstash Search.
 
@@ -7,7 +7,7 @@ A CLI tool to crawl documentation sites and create a search index for Upstash Se
 You can run the CLI directly using `npx` (no installation required):
 
 ```sh
-npx crawl-and-search
+npx @upstash/search-crawler
 ```
 
 ## Features
@@ -32,9 +32,3 @@ The tool will:
 1. Go to your [Upstash Console](https://console.upstash.com/).
 2. Select your Search index.
 3. Under the **Details** section, copy your `UPSTASH_SEARCH_REST_URL` and `UPSTASH_SEARCH_REST_TOKEN`.
-
-## Example
-
-```sh
-npx crawl-and-search
-```

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
-export async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
+async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
   const response = await axios.get(baseUrl);
   const $ = cheerio.load(response.data);
   const links = new Set<string>();
@@ -30,4 +30,24 @@ export async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
   });
   
   return Array.from(links);
+}
+
+export async function getAllDocLinks(baseUrl: string): Promise<string[]> {
+  // try /sitemap.xml first
+  try {
+    const sitemapUrl = baseUrl.endsWith('/') ? new URL('sitemap.xml', baseUrl).toString() : new URL(`${baseUrl}/sitemap.xml`).toString();
+    const response = await axios.get(sitemapUrl, { timeout: 5000 });
+    if (response.status === 200 && response.data) {
+
+      const urls: string[] = [];
+      const $ = cheerio.load(response.data, { xmlMode: true });
+      $('url > loc').each((_, el) => {
+        urls.push($(el).text().trim());
+      });
+      if (urls.length > 0) return urls;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return getInternalDocLinks(baseUrl);
 }

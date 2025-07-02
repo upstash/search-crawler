@@ -11,11 +11,11 @@ export async function upsertToUpstash(data: CrawledContent[], index: any): Promi
         const id = `${item.path.replace(/[^a-zA-Z0-9]/g, '_')}_${idx}`;
         const content = {
           title: item.title,
-          url: item.url,
-          path: item.path
+          fullContent: item.content.substring(0, 1200),
         };
         const metadata = {
-          fullContent: item.content.substring(0, 1000),
+          url: item.url,
+          path: item.path,
           contentLength: item.content.length,
           crawledAt: new Date().toISOString()
         };

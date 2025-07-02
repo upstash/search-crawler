@@ -1,7 +1,7 @@
 import { Search } from "@upstash/search";
 import { intro, outro, text, confirm, spinner, isCancel } from '@clack/prompts';
 import chalk from 'chalk';
-import { getInternalDocLinks } from './crawler/linkFinder';
+import { getAllDocLinks } from './crawler/linkFinder';
 import { crawlDocumentation } from './crawler/extractor';
 import { upsertToUpstash } from './crawler/indexer';
 
@@ -89,7 +89,7 @@ async function main() {
     const s = spinner();
     s.start(chalk.cyan('Crawling documentation'));
 
-    const links = await getInternalDocLinks(docUrl as string);
+    const links = await getAllDocLinks(docUrl as string);
     if (!links.includes(docUrl as string)) links.unshift(docUrl as string);
     s.message(chalk.cyan(`Found ${links.length} pages to crawl. Starting...`));
 
