@@ -5,10 +5,7 @@ async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
   const response = await axios.get(baseUrl);
   const $ = cheerio.load(response.data);
   const links = new Set<string>();
-  
-  const urlObj = new URL(baseUrl);
-  const domain = urlObj.origin;
-  
+
   // Find all links
   let main = $('main');
   if (main.length === 0) {
@@ -21,14 +18,14 @@ async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
     try {
       url = new URL(href, baseUrl).toString();
     } catch {
-      return; 
+      return;
     }
 
     if (url.startsWith(baseUrl)) {
       links.add(url);
     }
   });
-  
+
   return Array.from(links);
 }
 
