@@ -24,19 +24,67 @@ export async function crawlDocumentation(url: string): Promise<CrawledContent[]>
 
     // Find all heading elements up to h3
     const headings = main.find('h1, h2, h3');
+
     if (headings.length > 0) {
       headings.each((index, element) => {
         const $heading = $(element);
         const headingText = $heading.text().trim();
         const headingId = $heading.attr('id');
-        const content = $heading.nextUntil('h1, h2, h3').text().trim();
+        let content = '';
+        // check if heading is inside a <header>
+        const headerParent = $heading.parents('header').first();
+        if (headerParent.length > 0) {
+          let contentContainer = null;
+
+          const contentSelectors = ['.mdx-content', '.content', '.main-content', '[class*="content"]'];
+          for (const selector of contentSelectors) {
+            contentContainer = headerParent.nextAll(selector).first();
+            if (contentContainer.length > 0) break;
+          }
+
+          if (!contentContainer || contentContainer.length === 0) {
+            headerParent.nextAll().each((i, elem) => {
+              const $elem = $(elem);
+              const textContent = $elem.text().trim();
+              if (textContent.length > 50) {
+                contentContainer = $elem;
+                return false;
+              }
+            });
+          }
+
+          if (contentContainer && contentContainer.length > 0) {
+            // get content until the first heading in the container
+            let contentText = '';
+            contentContainer.contents().each((i, elem) => {
+              const $elem = $(elem);
+              if ($elem.is('h1, h2, h3')) {
+                return false;
+              }
+              contentText += $elem.text() + ' ';
+            });
+            content = contentText.trim();
+          }
+        } else {
+          // default: get all siblings until the next heading
+          content = $heading.nextUntil('h1, h2, h3').text().trim();
+        }
         const cleanContent = cleanTextContent(content);
         if (cleanContent) {
-          const sectionUrl = headingId ? `${url}#${headingId}` : url;
-          const sectionPath = headingId ? `${url.replace(new URL(url).origin, '')}#${headingId}` : url.replace(new URL(url).origin, '');
+          let sectionUrl, sectionPath;
+
+          // For headings inside header, use base URL 
+          if (headerParent && headerParent.length > 0) {
+            sectionUrl = url;
+            sectionPath = url.replace(new URL(url).origin, '');
+          } else {
+            sectionUrl = headingId ? `${url}#${headingId}` : url;
+            sectionPath = headingId ? `${url.replace(new URL(url).origin, '')}#${headingId}` : url.replace(new URL(url).origin, '');
+          }
+
           results.push({
             url: sectionUrl,
-            title: headingText ? `${baseTitle} - ${headingText}`.trim() : baseTitle,
+            title: headingText || baseTitle,
             content: cleanContent,
             path: sectionPath
           });
