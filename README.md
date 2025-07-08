@@ -25,7 +25,8 @@ You will be prompted for:
 The tool will:
 1. Discover all internal documentation links
 2. Crawl each page and extract content
-3. Upsert the content into your Upstash Search index
+3. Keep track of the new or obsolete data
+4. Upsert the new records into your Upstash Search index
 
 ## Obtaining Upstash Credentials
 
