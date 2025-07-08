@@ -3,7 +3,7 @@ import { intro, outro, text, confirm, spinner, isCancel } from '@clack/prompts';
 import chalk from 'chalk';
 import { getAllDocLinks } from './crawler/linkFinder';
 import { crawlDocumentation } from './crawler/extractor';
-import { upsertToUpstash } from './crawler/indexer';
+import { upsertToUpstash, compareWithExistingData } from './crawler/indexer';
 
 let upstashClient: Search;
 let index: any;
@@ -83,7 +83,7 @@ async function main() {
     if (isCancel(shouldProceed)) {
       outro("Crawling cancelled.")
       return;
-    }   
+    }
 
     // Start crawling
     const s = spinner();
@@ -91,7 +91,7 @@ async function main() {
 
     const links = await getAllDocLinks(docUrl as string);
     if (!links.includes(docUrl as string)) links.unshift(docUrl as string);
-    s.message(chalk.cyan(`Found ${links.length} pages to crawl. Starting...`));
+    s.message(chalk.cyan(`Found ${links.length} pages to crawl. Starting`));
 
     const results = [];
     for (let i = 0; i < links.length; i++) {
@@ -101,10 +101,17 @@ async function main() {
       results.push(...contents);
     }
 
-    s.message(chalk.cyan(`Crawled ${results.length} content sections. Upserting to Upstash`));
-    await upsertToUpstash(results, index);
-    s.stop(chalk.green(`✅ Successfully crawled and upserted ${results.length} records!`));
-    outro(chalk.green(`🎉 Success! Check your index at ${chalk.cyan("https://console.upstash.com/search")}`));
+    s.message(chalk.cyan(`Crawled ${results.length} content sections. Fetching existing data`));
+    const newContents = await compareWithExistingData(results, index, s);
+    if (newContents.length > 0) {
+      s.message(chalk.cyan(`Found ${newContents.length} new records. Upserting to Upstash`));
+      await upsertToUpstash(newContents, index);
+      s.stop(chalk.green(`✅ Successfully crawled and upserted ${newContents.length} new records!`));
+      outro(chalk.green(`🎉 Check your index at ${chalk.cyan("https://console.upstash.com/search")}`));
+    } else {
+      outro(chalk.cyan('No new contents found. Skipping upsert.'));
+    }
+
   } catch (error) {
     outro(chalk.red('❌ Error:') + ' ' + chalk.red(error));
     outro(chalk.red('Operation failed. Please check your credentials and try again.'));
