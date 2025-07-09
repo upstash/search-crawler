@@ -59,10 +59,10 @@ export async function compareWithExistingData(currentData: CrawledContent[], ind
       }
     }
     if (obsoleteIds.length > 0) {
-      s.message(chalk.red(`Removing ${obsoleteIds.length} obsolete items`));
+      if (s) s.message(chalk.red(`Removing ${obsoleteIds.length} obsolete items`));
       await batchDelete(obsoleteIds, index, s);
     } else {
-      s.message(chalk.green('No obsolete items found.'));
+      if (s) s.message(chalk.green('No obsolete items found.'));
     }
     // return only new or changed items
     const allDocIdSet = new Set(allDocIds);
@@ -81,6 +81,6 @@ async function batchDelete(ids: string[], index: any, s: any): Promise<void> {
   for (let i = 0; i < ids.length; i += batchSize) {
     const batch = ids.slice(i, i + batchSize);
     await index.delete({ ids: batch });
-    s.message(chalk.red(`Deleted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(ids.length / batchSize)}`));
+    if (s) s.message(chalk.red(`Deleted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(ids.length / batchSize)}`));
   }
 }
