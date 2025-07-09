@@ -15,6 +15,7 @@ export interface CrawlerOptions {
   upstashToken: string;
   indexName?: string;
   docUrl: string;
+  silent?: boolean;
 }
 
 export interface CrawlerResult {

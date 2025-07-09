@@ -15,7 +15,7 @@ let index: any;
 // main library function
 export async function crawlAndIndex(options: CrawlerOptions): Promise<CrawlerResult> {
   try {
-    const { upstashUrl, upstashToken, indexName = 'default', docUrl } = options;
+    const { upstashUrl, upstashToken, indexName = 'default', docUrl, silent = true } = options;
 
     upstashClient = new Search({
       url: upstashUrl,
@@ -24,29 +24,39 @@ export async function crawlAndIndex(options: CrawlerOptions): Promise<CrawlerRes
     index = upstashClient.index(indexName);
 
     // Start crawling
-    const s = spinner();
-    s.start(chalk.cyan('Crawling documentation'));
+    const s = silent ? null : spinner();
+    if (s) s.start(chalk.cyan('Crawling documentation'));
 
     const links = await getAllDocLinks(docUrl);
     if (!links.includes(docUrl)) links.unshift(docUrl);
     
-    s.message(chalk.cyan(`Found ${links.length} pages to crawl. Starting`));
+    if (s) s.message(chalk.cyan(`Found ${links.length} pages to crawl. Starting`));
 
     const results = [];
-    for (let i = 0; i < links.length; i++) {
-      const link = links[i];
-      s.message(chalk.cyan(`Crawling ${i + 1}/${links.length}: ${link}`));
-      const contents = await crawlDocumentation(link);
-      results.push(...contents);
+    if (s) {
+      // With progress messages
+      for (let i = 0; i < links.length; i++) {
+        const link = links[i];
+        s.message(chalk.cyan(`Crawling ${i + 1}/${links.length}: ${link}`));
+        const contents = await crawlDocumentation(link);
+        results.push(...contents);
+      }
+    } else {
+      // Silent mode
+      for (let i = 0; i < links.length; i++) {
+        const link = links[i];
+        const contents = await crawlDocumentation(link);
+        results.push(...contents);
+      }
     }
 
-    s.message(chalk.cyan(`Crawled ${results.length} content sections. Fetching existing data`));
+    if (s) s.message(chalk.cyan(`Crawled ${results.length} content sections. Fetching existing data`));
     const newContents = await compareWithExistingData(results, index, s);
     
     if (newContents.length > 0) {
-      s.message(chalk.cyan(`Found ${newContents.length} new records. Upserting to Upstash`));
+      if (s) s.message(chalk.cyan(`Found ${newContents.length} new records. Upserting to Upstash`));
       await upsertToUpstash(newContents, index);
-      s.stop(chalk.green(`✅ Successfully crawled and upserted ${newContents.length} new records!`));
+      if (s) s.stop(chalk.green(`✅ Successfully crawled and upserted ${newContents.length} new records!`));
       
       return {
         success: true,
@@ -136,12 +146,6 @@ async function main() {
       return;
     }
 
-    upstashClient = new Search({
-      url: upstashUrl as string,
-      token: upstashToken as string,
-    });
-    index = upstashClient.index(indexName);
-
     const docUrl = options?.docUrl ?? (await text({
       message: 'Enter the documentation URL to crawl:',
       placeholder: 'https://upstash.com/docs',
@@ -164,31 +168,23 @@ async function main() {
       return;
     }
   }
-    // Start crawling
-    const s = spinner();
-    s.start(chalk.cyan('Crawling documentation'));
+    const result = await crawlAndIndex({
+      upstashUrl: upstashUrl as string,
+      upstashToken: upstashToken as string,
+      indexName: indexName as string,
+      docUrl: docUrl as string,
+      silent: false
+    });
 
-    const links = await getAllDocLinks(docUrl as string);
-    if (!links.includes(docUrl as string)) links.unshift(docUrl as string);
-    s.message(chalk.cyan(`Found ${links.length} pages to crawl. Starting`));
-
-    const results = [];
-    for (let i = 0; i < links.length; i++) {
-      const link = links[i];
-      s.message(chalk.cyan(`Crawling ${i + 1}/${links.length}: ${link}`));
-      const contents = await crawlDocumentation(link);
-      results.push(...contents);
-    }
-
-    s.message(chalk.cyan(`Crawled ${results.length} content sections. Fetching existing data`));
-    const newContents = await compareWithExistingData(results, index, s);
-    if (newContents.length > 0) {
-      s.message(chalk.cyan(`Found ${newContents.length} new records. Upserting to Upstash`));
-      await upsertToUpstash(newContents, index);
-      s.stop(chalk.green(`✅ Successfully crawled and upserted ${newContents.length} new records!`));
-      outro(chalk.green(`🎉 Check your index at ${chalk.cyan("https://console.upstash.com/search")}`));
+    if (result.success) {
+      if (result.newRecordsCount > 0) {
+        outro(chalk.green(`🎉 Check your index at ${chalk.cyan("https://console.upstash.com/search")}`));
+      } else {
+        outro(chalk.cyan('No new contents found. Skipping upsert.'));
+      }
     } else {
-      outro(chalk.cyan('No new contents found. Skipping upsert.'));
+      outro(chalk.red('❌ Error:') + ' ' + chalk.red(result.error));
+      outro(chalk.red('Operation failed. Please check your credentials and try again.'));
     }
 
   } catch (error) {
@@ -201,3 +197,4 @@ async function main() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
+
