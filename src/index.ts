@@ -1,3 +1,4 @@
+import { Command } from "commander"
 import { Search } from "@upstash/search";
 import { intro, outro, text, confirm, spinner, isCancel } from '@clack/prompts';
 import chalk from 'chalk';
@@ -9,37 +10,50 @@ let upstashClient: Search;
 let index: any;
 
 async function main() {
+  const program = new Command();
+
+  program
+  .option("--upstash-url <url>", "Upstash URL")
+  .option("--upstash-token <token>", "Upstash Token")
+  .option("--index-name <name>", "Index Name")
+  .option("--doc-url <url>", "Documentation URL")
+  .parse(process.argv)
+  const options = program.opts()
+
   intro(chalk.cyan('Create a search index for your documentation'));
 
   try {
     // Get Upstash Search credentials
-    const upstashUrl = await text({
+    
+    const upstashUrl = options?.upstashUrl ?? (await text({
       message: 'Enter your Upstash Search URL:',
       placeholder: 'https://***.upstash.io',
       validate: (value: string) => {
         if (!value) return 'URL is required';
         if (!value.startsWith('https://')) return 'URL must start with https://';
       }
-    });
+    }));
     if (isCancel(upstashUrl)) {
       outro("Crawling cancelled.")
       return;
     }
+  
 
-    const upstashToken = await text({
+    const upstashToken = options?.upstashToken ?? (await text({
       message: 'Enter your Upstash Search token:',
       placeholder: 'AB4FMH...',
       validate: (value: string) => {
         if (!value) return 'Token is required';
       }
-    });
+    }));
     if (isCancel(upstashToken)) {
       outro("Crawling cancelled.")
       return;
     }
 
     // Ask for index name
-    let indexName = 'default';
+    let indexName = options?.indexName ?? 'default';
+    if (!options?.indexName) {
     const useDefaultIndex = await confirm({
       message: `Use the default index name (${chalk.green('default')})?`
     });
@@ -52,7 +66,7 @@ async function main() {
         }
       });
       indexName = customIndex as string;
-    }
+    }}
     if (isCancel(indexName)) {
       outro("Crawling cancelled.")
       return;
@@ -64,19 +78,20 @@ async function main() {
     });
     index = upstashClient.index(indexName);
 
-    const docUrl = await text({
+    const docUrl = options?.docUrl ?? (await text({
       message: 'Enter the documentation URL to crawl:',
       placeholder: 'https://upstash.com/docs',
       validate: (value: string) => {
         if (!value) return 'URL is required';
         if (!value.startsWith('http')) return 'URL must start with http:// or https://';
       }
-    });
+    }));
     if (isCancel(docUrl)) {
       outro("Crawling cancelled.")
       return;
     }
     // Confirm before starting
+    if (! (options?.docUrl && options?.indexName && options?.upstashUrl && options?.upstashToken)) {
     const shouldProceed = await confirm({
       message: `Ready to crawl ${chalk.cyan(String(docUrl))} and upsert to Upstash Search index ${chalk.green(indexName)}?`
     });
@@ -84,7 +99,7 @@ async function main() {
       outro("Crawling cancelled.")
       return;
     }
-
+  }
     // Start crawling
     const s = spinner();
     s.start(chalk.cyan('Crawling documentation'));
