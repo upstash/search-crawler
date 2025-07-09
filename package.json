@@ -14,7 +14,7 @@
     "package.json"
   ],
   "bin": {
-    "@upstash/search-crawler": "./dist/index.js"
+    "@upstash/search-crawler": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsup",
