@@ -193,8 +193,8 @@ async function main() {
   }
 }
 
-// Only run CLI when this file is executed directly
-if (import.meta.url.endsWith(process.argv[1]) || process.argv[1].includes('@upstash/search-crawler')) {
+// Only run CLI when executed directly (not imported)
+if (process.argv[1] && process.argv[1].includes('index.js')) {
   main();
 }
 
