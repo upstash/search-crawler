@@ -30,21 +30,31 @@ async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
 }
 
 export async function getAllDocLinks(baseUrl: string): Promise<string[]> {
-  // try /sitemap.xml first
-  try {
-    const sitemapUrl = baseUrl.endsWith('/') ? new URL('sitemap.xml', baseUrl).toString() : new URL(`${baseUrl}/sitemap.xml`).toString();
-    const response = await axios.get(sitemapUrl, { timeout: 5000 });
-    if (response.status === 200 && response.data) {
+  // try sitemap.xml at current path first, then at origin
+  const sitemapUrls = [
+    baseUrl.endsWith('/') ? new URL('sitemap.xml', baseUrl).toString() : new URL(`${baseUrl}/sitemap.xml`).toString(),
+    new URL('sitemap.xml', new URL(baseUrl).origin).toString()
+  ];
 
-      const urls: string[] = [];
-      const $ = cheerio.load(response.data, { xmlMode: true });
-      $('url > loc').each((_, el) => {
-        urls.push($(el).text().trim());
-      });
-      if (urls.length > 0) return urls;
+  for (const sitemapUrl of sitemapUrls) {
+    try {
+      const response = await axios.get(sitemapUrl, { timeout: 5000 });
+      if (response.status === 200 && response.data) {
+        const urls: string[] = [];
+        const $ = cheerio.load(response.data, { xmlMode: true });
+        $('url > loc').each((_, el) => {
+          const url = $(el).text().trim();
+          // Only include URLs that are within the baseUrl scope
+          if (url.startsWith(baseUrl)) {
+            urls.push(url);
+          }
+        });
+        if (urls.length > 0) return urls;
+      }
+    } catch (e) {
+      // ignore and try next sitemap URL
     }
-  } catch (e) {
-    // ignore
   }
+  
   return getInternalDocLinks(baseUrl);
 }
