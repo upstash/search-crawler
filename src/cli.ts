@@ -105,11 +105,13 @@ async function cli() {
     } else {
       outro(chalk.red('❌ Error:') + ' ' + chalk.red(result.error));
       outro(chalk.red('Operation failed. Please check your credentials and try again.'));
+      return;
     }
 
   } catch (error) {
     outro(chalk.red('❌ Error:') + ' ' + chalk.red(error));
     outro(chalk.red('Operation failed. Please check your credentials and try again.'));
+    return;
   }
 }
 
