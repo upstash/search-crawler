@@ -33,20 +33,22 @@ export async function crawlAndIndex(options: CrawlerOptions): Promise<CrawlerRes
 
     const results = [];
     if (s) {
-      // With progress messages
-      for (let i = 0; i < links.length; i++) {
-        const link = links[i];
-        s.message(chalk.cyan(`Crawling ${i + 1}/${links.length}: ${link}`));
+      // With progress messages - parallel execution
+      const promises = links.map(async (link, i) => {
+        if (s) s.message(chalk.cyan(`Crawling ${i + 1}/${links.length}: ${link}`));
         const contents = await crawlDocumentation(link);
-        results.push(...contents);
-      }
+        return contents;
+      });
+      const allResults = await Promise.all(promises);
+      results.push(...allResults.flat());
     } else {
-      // Silent mode
-      for (let i = 0; i < links.length; i++) {
-        const link = links[i];
+      // Silent mode - parallel execution
+      const promises = links.map(async (link) => {
         const contents = await crawlDocumentation(link);
-        results.push(...contents);
-      }
+        return contents;
+      });
+      const allResults = await Promise.all(promises);
+      results.push(...allResults.flat());
     }
 
     if (s) s.message(chalk.cyan(`Crawled ${results.length} content sections. Fetching existing data`));
