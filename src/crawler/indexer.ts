@@ -74,11 +74,7 @@ export async function compareWithExistingData(
       }
     }
     if (obsoleteIds.length > 0) {
-      if (s)
-        s.message(chalk.red(`Removing ${obsoleteIds.length} obsolete items`));
       await batchDelete(obsoleteIds, index, s);
-    } else {
-      if (s) s.stop(chalk.green("No obsolete items found."));
     }
     // return only new or changed items
     const allDocIdSet = new Set(allDocIds);
@@ -91,9 +87,7 @@ export async function compareWithExistingData(
     });
     return newOrChangedItems;
   } catch (error) {
-    throw new Error(
-      chalk.red("Error removing obsolete entries: ") + (error as Error).message
-    );
+    throw new Error(error as string);
   }
 }
 
