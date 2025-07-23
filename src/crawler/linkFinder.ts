@@ -1,5 +1,5 @@
-import axios from 'axios';
-import * as cheerio from 'cheerio';
+import axios from "axios";
+import * as cheerio from "cheerio";
 
 async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
   const response = await axios.get(baseUrl);
@@ -7,12 +7,12 @@ async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
   const links = new Set<string>();
 
   // Find all links
-  let main = $('main');
+  let main = $("main");
   if (main.length === 0) {
     main = $('div[role="main"], .body[role="main"]');
   }
-  main.find('a[href]').each((_, element) => {
-    const href = $(element).attr('href');
+  main.find("a[href]").each((_, element) => {
+    const href = $(element).attr("href");
     if (!href) return;
     let url: string;
     try {
@@ -32,8 +32,10 @@ async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
 export async function getAllDocLinks(baseUrl: string): Promise<string[]> {
   // try sitemap.xml at current path first, then at origin
   const sitemapUrls = [
-    baseUrl.endsWith('/') ? new URL('sitemap.xml', baseUrl).toString() : new URL(`${baseUrl}/sitemap.xml`).toString(),
-    new URL('sitemap.xml', new URL(baseUrl).origin).toString()
+    baseUrl.endsWith("/")
+      ? new URL("sitemap.xml", baseUrl).toString()
+      : new URL(`${baseUrl}/sitemap.xml`).toString(),
+    new URL("sitemap.xml", new URL(baseUrl).origin).toString(),
   ];
 
   for (const sitemapUrl of sitemapUrls) {
@@ -42,7 +44,7 @@ export async function getAllDocLinks(baseUrl: string): Promise<string[]> {
       if (response.status === 200 && response.data) {
         const urls: string[] = [];
         const $ = cheerio.load(response.data, { xmlMode: true });
-        $('url > loc').each((_, el) => {
+        $("url > loc").each((_, el) => {
           const url = $(el).text().trim();
           // Only include URLs that are within the baseUrl scope
           if (url.startsWith(baseUrl)) {
@@ -55,6 +57,6 @@ export async function getAllDocLinks(baseUrl: string): Promise<string[]> {
       // ignore and try next sitemap URL
     }
   }
-  
+
   return getInternalDocLinks(baseUrl);
 }

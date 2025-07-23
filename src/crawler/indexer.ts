@@ -1,15 +1,21 @@
-import { CrawledContent } from '../types';
-import chalk from 'chalk';
-import crypto from 'crypto';
+import { CrawledContent } from "../types";
+import chalk from "chalk";
+import crypto from "crypto";
 
-export async function upsertToUpstash(data: CrawledContent[], index: any): Promise<void> {
+export async function upsertToUpstash(
+  data: CrawledContent[],
+  index: any
+): Promise<void> {
   try {
     const batchSize = 100;
     let totalUpserted = 0;
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const upstashBatch = batch.map((item, idx) => {
-        const id = crypto.createHash('md5').update(item.url + item.title + item.content).digest('hex');
+        const id = crypto
+          .createHash("md5")
+          .update(item.url + item.title + item.content)
+          .digest("hex");
         const content = {
           title: item.title,
           fullContent: item.content.substring(0, 1200),
@@ -18,7 +24,7 @@ export async function upsertToUpstash(data: CrawledContent[], index: any): Promi
           url: item.url,
           path: item.path,
           contentLength: item.content.length,
-          crawledAt: new Date().toISOString()
+          crawledAt: new Date().toISOString(),
         };
         return { id, content, metadata };
       });
@@ -26,11 +32,17 @@ export async function upsertToUpstash(data: CrawledContent[], index: any): Promi
       totalUpserted += batch.length;
     }
   } catch (error) {
-    throw new Error(chalk.red('Error upserting to Upstash:') + ' ' + chalk.red(error));
+    throw new Error(
+      chalk.red("Error upserting to Upstash:") + " " + chalk.red(error)
+    );
   }
 }
 
-export async function compareWithExistingData(currentData: CrawledContent[], index: any, s: any): Promise<CrawledContent[]> {
+export async function compareWithExistingData(
+  currentData: CrawledContent[],
+  index: any,
+  s: any
+): Promise<CrawledContent[]> {
   try {
     let cursor = 0;
     const limit = 100;
@@ -39,7 +51,7 @@ export async function compareWithExistingData(currentData: CrawledContent[], ind
       const { nextCursor, documents } = await index.range({
         cursor,
         limit,
-        prefix: ""
+        prefix: "",
       });
       allDocIds = allDocIds.concat(documents.map((doc: any) => doc.id));
       if (!nextCursor) break;
@@ -47,8 +59,11 @@ export async function compareWithExistingData(currentData: CrawledContent[], ind
     }
 
     const currentLookupKeys = new Set(
-      currentData.map(item =>
-        crypto.createHash('md5').update(item.url + item.title + item.content).digest('hex')
+      currentData.map((item) =>
+        crypto
+          .createHash("md5")
+          .update(item.url + item.title + item.content)
+          .digest("hex")
       )
     );
     // remove obsolete items
@@ -59,20 +74,26 @@ export async function compareWithExistingData(currentData: CrawledContent[], ind
       }
     }
     if (obsoleteIds.length > 0) {
-      if (s) s.message(chalk.red(`Removing ${obsoleteIds.length} obsolete items`));
+      if (s)
+        s.message(chalk.red(`Removing ${obsoleteIds.length} obsolete items`));
       await batchDelete(obsoleteIds, index, s);
     } else {
-      if (s) s.message(chalk.green('No obsolete items found.'));
+      if (s) s.stop(chalk.green("No obsolete items found."));
     }
     // return only new or changed items
     const allDocIdSet = new Set(allDocIds);
-    const newOrChangedItems = currentData.filter(item => {
-      const hash = crypto.createHash('md5').update(item.url + item.title + item.content).digest('hex');
+    const newOrChangedItems = currentData.filter((item) => {
+      const hash = crypto
+        .createHash("md5")
+        .update(item.url + item.title + item.content)
+        .digest("hex");
       return !allDocIdSet.has(hash);
     });
     return newOrChangedItems;
   } catch (error) {
-    throw new Error(chalk.red('Error removing obsolete entries: ') + (error as Error).message);
+    throw new Error(
+      chalk.red("Error removing obsolete entries: ") + (error as Error).message
+    );
   }
 }
 
@@ -81,6 +102,5 @@ async function batchDelete(ids: string[], index: any, s: any): Promise<void> {
   for (let i = 0; i < ids.length; i += batchSize) {
     const batch = ids.slice(i, i + batchSize);
     await index.delete({ ids: batch });
-    if (s) s.message(chalk.red(`Deleted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(ids.length / batchSize)}`));
   }
 }
