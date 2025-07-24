@@ -22,10 +22,10 @@ Or with command-line options:
 
 ```sh
 npx @upstash/search-crawler \
-  --upstash-url "https://your-url.upstash.io" \
-  --upstash-token "your-token" \
+  --upstash-url "UPSTASH_SEARCH_REST_URL" \
+  --upstash-token "UPSTASH_SEARCH_REST_TOKEN" \
   --index-name "my-index" \
-  --doc-url "https://your-docs.com"
+  --doc-url "https://example.com/docs"
 ```
 
 You will be prompted for any missing options:
@@ -48,10 +48,10 @@ You can also use this as a library in your own code:
 import { crawlAndIndex, type CrawlerOptions, type CrawlerResult } from '@upstash/search-crawler';
 
 const options: CrawlerOptions = {
-  upstashUrl: 'https://your-url.upstash.io',
-  upstashToken: 'your-token',
+  upstashUrl: 'UPSTASH_SEARCH_REST_URL',
+  upstashToken: 'UPSTASH_SEARCH_REST_TOKEN',
   indexName: 'my-docs',
-  docUrl: 'https://your-docs.com',
+  docUrl: 'https://example.com/docs',
   silent: true // no console output
 };
 
