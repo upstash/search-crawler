@@ -4,18 +4,23 @@ import crypto from "crypto";
 
 export async function upsertToUpstash(
   data: CrawledContent[],
-  index: any
+  index: any,
+  docUrl: string
 ): Promise<void> {
   try {
     const batchSize = 100;
     let totalUpserted = 0;
+    const prefix = crypto.createHash("md5").update(docUrl).digest("hex");
     for (let i = 0; i < data.length; i += batchSize) {
       const batch = data.slice(i, i + batchSize);
       const upstashBatch = batch.map((item, idx) => {
-        const id = crypto
-          .createHash("md5")
-          .update(item.url + item.title + item.content)
-          .digest("hex");
+        const id = [
+          prefix,
+          crypto
+            .createHash("md5")
+            .update(item.url + item.title + item.content)
+            .digest("hex"),
+        ].join("-");
         const content = {
           title: item.title,
           fullContent: item.content.substring(0, 1200),
@@ -41,17 +46,19 @@ export async function upsertToUpstash(
 export async function compareWithExistingData(
   currentData: CrawledContent[],
   index: any,
+  docUrl: string,
   s: any
 ): Promise<CrawledContent[]> {
   try {
     let cursor = 0;
     const limit = 100;
     let allDocIds: string[] = [];
+    const prefix = crypto.createHash("md5").update(docUrl).digest("hex");
     while (true) {
       const { nextCursor, documents } = await index.range({
         cursor,
         limit,
-        prefix: "",
+        prefix,
       });
       allDocIds = allDocIds.concat(documents.map((doc: any) => doc.id));
       if (!nextCursor) break;
@@ -60,10 +67,13 @@ export async function compareWithExistingData(
 
     const currentLookupKeys = new Set(
       currentData.map((item) =>
-        crypto
-          .createHash("md5")
-          .update(item.url + item.title + item.content)
-          .digest("hex")
+        [
+          prefix,
+          crypto
+            .createHash("md5")
+            .update(item.url + item.title + item.content)
+            .digest("hex"),
+        ].join("-")
       )
     );
     // remove obsolete items
@@ -79,10 +89,13 @@ export async function compareWithExistingData(
     // return only new or changed items
     const allDocIdSet = new Set(allDocIds);
     const newOrChangedItems = currentData.filter((item) => {
-      const hash = crypto
-        .createHash("md5")
-        .update(item.url + item.title + item.content)
-        .digest("hex");
+      const hash = [
+        prefix,
+        crypto
+          .createHash("md5")
+          .update(item.url + item.title + item.content)
+          .digest("hex"),
+      ].join("-");
       return !allDocIdSet.has(hash);
     });
     return newOrChangedItems;
