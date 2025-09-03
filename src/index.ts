@@ -67,7 +67,12 @@ export async function crawlAndIndex(
           `Crawled ${results.length} content sections. Fetching existing data`
         )
       );
-    const newContents = await compareWithExistingData(results, index, s);
+    const newContents = await compareWithExistingData(
+      results,
+      index,
+      docUrl,
+      s
+    );
 
     if (newContents.length > 0) {
       if (s)
@@ -76,7 +81,7 @@ export async function crawlAndIndex(
             `Found ${newContents.length} new records. Upserting to Upstash`
           )
         );
-      await upsertToUpstash(newContents, index);
+      await upsertToUpstash(newContents, index, docUrl);
       if (s)
         s.stop(
           chalk.green(
