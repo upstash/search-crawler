@@ -11,6 +11,9 @@ async function getInternalDocLinks(baseUrl: string): Promise<string[]> {
   if (main.length === 0) {
     main = $('div[role="main"], .body[role="main"]');
   }
+  if (main.length === 0) {
+    main = $("body");
+  }
   main.find("a[href]").each((_, element) => {
     const href = $(element).attr("href");
     if (!href) return;
